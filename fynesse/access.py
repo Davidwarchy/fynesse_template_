@@ -73,9 +73,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class access:
-    @staticmethod
-    def plot_city_map(
+def plot_city_map(
         place_name: str, 
         latitude: float, 
         longitude: float, 
@@ -187,4 +185,4 @@ class access:
 
 # Example usage
 if __name__ == "__main__":
-    access.plot_city_map('Nyeri, Kenya', -0.4371, 36.9580, 2)
+    plot_city_map('Nyeri, Kenya', -0.4371, 36.9580, 2)
