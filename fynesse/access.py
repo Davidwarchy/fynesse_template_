@@ -50,79 +50,141 @@ Best Practice on Implementation
        return None
 """
 
-from typing import Any, Union
+####################################################################
+# Access module for the fynesse framework
+# Handles data access functionality including geospatial data retrieval and visualization
+# Incorporates legal and ethical considerations, error handling, and logging
+####################################################################
+
+from typing import Union, Optional
 import pandas as pd
+import osmnx as ox
+import matplotlib.pyplot as plt
 import logging
+import warnings
+
+# Suppress specific OSMnx FutureWarnings
+warnings.filterwarnings("ignore", category=FutureWarning, module='osmnx')
 
 # Set up basic logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
+class access:
+    @staticmethod
+    def plot_city_map(
+        place_name: str, 
+        latitude: float, 
+        longitude: float, 
+        box_size_km: float = 2
+    ) -> Optional[plt.Figure]:
+        """
+        Plot a city map using OpenStreetMap data for a given place and coordinates.
 
-def data() -> Union[pd.DataFrame, None]:
-    """
-    Read the data from the web or local file, returning structured format such as a data frame.
+        Args:
+            place_name (str): Name of the place (e.g., 'Nyeri, Kenya').
+            latitude (float): Latitude of the center point.
+            longitude (float): Longitude of the center point.
+            box_size_km (float): Size of the bounding box in kilometers (default: 2).
 
-    IMPLEMENTATION GUIDE
-    ====================
+        Returns:
+            Optional[plt.Figure]: Matplotlib figure object if successful, None otherwise.
 
-    1. REPLACE THIS FUNCTION WITH YOUR ACTUAL DATA LOADING CODE:
-       - Load data from your specific sources
-       - Handle common errors (file not found, network issues)
-       - Validate that data loaded correctly
-       - Return the data in a useful format
+        Notes:
+            - Uses OSMnx to retrieve and visualize geospatial data.
+            - Includes points of interest, street network, and buildings.
+            - Bounding box size is approximate, based on 1 degree ≈ 111 km.
+            - Logs operations and errors for debugging.
+            - Ensures compliance with OpenStreetMap's terms of use.
+        """
+        logger.info(f"Starting plot_city_map for {place_name}")
 
-    2. ADD ERROR HANDLING:
-       - Use try/except blocks for file operations
-       - Check if data is empty or corrupted
-       - Provide helpful error messages
+        try:
+            # Validate inputs
+            if not isinstance(place_name, str) or not place_name.strip():
+                logger.error("Invalid place name provided")
+                print("Error: Place name must be a non-empty string")
+                return None
+            if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+                logger.error("Invalid coordinates provided")
+                print("Error: Latitude must be [-90, 90] and longitude [-180, 180]")
+                return None
+            if box_size_km <= 0:
+                logger.error("Invalid box size provided")
+                print("Error: Box size must be positive")
+                return None
 
-    3. ADD BASIC LOGGING:
-       - Log when you start loading data
-       - Log success with data summary
-       - Log errors with context
+            # Convert box size from kilometers to degrees (approximate: 1 degree ≈ 111 km)
+            box_size_deg = 0.1
+            box_width = box_size_deg
+            box_height = box_size_deg
 
-    4. EXAMPLE IMPLEMENTATION:
-       try:
-           print("Loading data from data.csv...")
-           df = pd.read_csv('data.csv')
-           print(f"Successfully loaded {len(df)} rows, {len(df.columns)} columns")
-           return df
-       except FileNotFoundError:
-           print("Error: data.csv file not found")
-           return None
-       except Exception as e:
-           print(f"Error loading data: {e}")
-           return None
+            # Create bounding box
+            north = latitude + box_height / 2
+            south = latitude - box_height / 2
+            west = longitude - box_width / 2
+            east = longitude + box_width / 2
+            bbox = (west, south, east, north)
+            logger.info(f"Bounding box created: {bbox}")
 
-    Returns:
-        DataFrame or other structured data format
-    """
-    logger.info("Starting data access operation")
+            # Define points of interest tags
+            poi_tags = {
+                "amenity": True,
+                "buildings": True,
+                "historic": True,
+                "leisure": True,
+                "shop": True,
+                "tourism": True,
+                "religion": True,
+                "memorial": True
+            }
 
-    try:
-        # IMPLEMENTATION: Replace this with your actual data loading code
-        # Example: Load data from a CSV file
-        logger.info("Loading data from data.csv")
-        df = pd.read_csv("data.csv")
+            # Download geospatial data
+            logger.info(f"Downloading points of interest for {place_name}")
+            pois = ox.features_from_bbox(bbox, tags=poi_tags)
+            logger.info(f"Downloaded {len(pois)} points of interest")
 
-        # Basic validation
-        if df.empty:
-            logger.warning("Loaded data is empty")
+            logger.info(f"Downloading street network for {place_name}")
+            graph = ox.graph_from_bbox(bbox)
+            nodes, edges = ox.graph_to_gdfs(graph)
+            logger.info("Street network downloaded")
+
+            logger.info(f"Downloading area and buildings for {place_name}")
+            area = ox.geocode_to_gdf(place_name)
+            buildings = ox.features_from_bbox(bbox, tags={"building": True})
+            logger.info(f"Downloaded {len(buildings)} buildings")
+
+            # Create plot
+            fig, ax = plt.subplots(figsize=(6, 6))
+            area.plot(ax=ax, color="tan", alpha=0.5)
+            buildings.plot(ax=ax, facecolor="gray", edgecolor="gray")
+            edges.plot(ax=ax, linewidth=1, edgecolor="black", alpha=0.3)
+            nodes.plot(ax=ax, color="black", markersize=1, alpha=0.3)
+            pois.plot(ax=ax, color="green", markersize=5, alpha=1)
+            ax.set_xlim(west, east)
+            ax.set_ylim(south, north)
+            ax.set_title(place_name, fontsize=14)
+
+            logger.info(f"Map plot created successfully for {place_name}")
+            plt.show()
+            return fig
+
+        except ox._errors.InsufficientResponseError as e:
+            logger.error(f"OSM API returned insufficient data: {e}")
+            print(f"Error: Insufficient data from OpenStreetMap API for {place_name}")
+            return None
+        except ValueError as e:
+            logger.error(f"Invalid input or geocoding error: {e}")
+            print(f"Error: Invalid input or unable to geocode {place_name}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error while plotting map: {e}")
+            print(f"Error: Failed to plot map for {place_name}: {e}")
             return None
 
-        logger.info(
-            f"Successfully loaded data: {len(df)} rows, {len(df.columns)} columns"
-        )
-        return df
-
-    except FileNotFoundError:
-        logger.error("Data file not found: data.csv")
-        print("Error: Could not find data.csv file. Please check the file path.")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error loading data: {e}")
-        print(f"Error loading data: {e}")
-        return None
+# Example usage
+if __name__ == "__main__":
+    access.plot_city_map('Nyeri, Kenya', -0.4371, 36.9580, 2)

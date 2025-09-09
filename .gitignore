@@ -193,3 +193,4 @@ cython_debug/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+cache/
