@@ -1,8 +1,14 @@
 # Access, Assess & Address Pipeline for Robot Sensor/Actuator Data 
+
+We’re building a dataset of sensor and actuator readings from a cylindrical two-wheeled robot as it moves around. The aim is to set up an **access → assess → address** pipeline to process this data and explore what the robot (and we) can learn from it.
+
+![alt text](media/web.gif)
+
 * Inspired by https://mlatcl.github.io/
 * Template from https://github.com/lawrennd/fynesse_template/
 
 ## Access
+### Sensors 
 * Collect a variety of sensor readings:
 - IMU (gyroscope, accelerometer) 
 - GPS 
@@ -16,6 +22,10 @@
 - Radar 
 - Touch sensor 
 
+### Actuators 
+* Actuator commands 
+
+### How to create the dataset 
 * We can use a background thread to collect data (to sort of queue data for storage) so that there's isn't latency between driving the robot. 
 * Simulation to be done on Webots with robots with a variety of sensors 
 * We want to consider sim to real gap 
