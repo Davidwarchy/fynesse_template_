@@ -5,7 +5,7 @@ from datetime import datetime
 
 def read_pickle_data(pickle_file, n):
     """
-    Read the first n elements from a pickle file and print them.
+    Read the first n elements from a pickle file and print them, handling variable number of columns.
     
     Args:
         pickle_file (str): Path to the pickle file
@@ -26,19 +26,36 @@ def read_pickle_data(pickle_file, n):
             print("No data available in the pickle file.")
             return
         
-        print(f"Printing first {n} accelerometer readings:")
-        print("Simulation Time | X | Y | Z")
-        print("-" * 35)
+        # Determine the number of columns dynamically
+        first_data = data[0][1]  # Access the sensor data part of the first tuple
+        num_columns = len(first_data) if isinstance(first_data, (list, tuple)) else 1
+        
+        # Create header based on number of columns
+        if num_columns == 1:
+            header = "Simulation Time | Value"
+            column_names = ["Value"]
+        else:
+            header = "Simulation Time | " + " | ".join(f"Col_{i+1}" for i in range(num_columns))
+            column_names = [f"Col_{i+1}" for i in range(num_columns)]
+        
+        print(f"Printing first {n} readings from {os.path.basename(pickle_file)}:")
+        print(header)
+        print("-" * (len(header) + 10))
+        
         for i in range(n):
-            sim_time, accel_values = data[i]
-            print(f"{sim_time:.3f} s | {accel_values[0]:.3f} | {accel_values[1]:.3f} | {accel_values[2]:.3f}")
+            sim_time, sensor_values = data[i]
+            if num_columns == 1:
+                print(f"{sim_time:.3f} s | {sensor_values:.3f}")
+            else:
+                values = [f"{val:.3f}" for val in sensor_values]
+                print(f"{sim_time:.3f} s | {' | '.join(values)}")
     
     except Exception as e:
         print(f"Error reading pickle file: {e}")
 
 if __name__ == "__main__":
     # Construct the pickle file path
-    pickle_file = "robot/controllers/drive_robot/data/2025-09-16-102202/accelerometer.pkl"
+    pickle_file = "robot/controllers/drive_robot/data/2025-09-16-105955/lidar.pkl"
     n_readings = 10 
     
     # Read and print the first n elements

@@ -1,4 +1,4 @@
-from controller import Robot, Accelerometer, Keyboard
+from controller import Robot, Accelerometer, Keyboard, Compass, Lidar
 import threading
 import pickle
 import os
@@ -19,6 +19,8 @@ if __name__ == "__main__":
     camera = robot.getDevice("Astra rgb")
     keyboard = robot.getKeyboard()
     accelerometer = robot.getDevice("accelerometer")
+    compass = robot.getDevice("compass")
+    lidar = robot.getDevice("lidar")
     
     # Set motor initial configurations
     motor_l.setPosition(float('inf'))
@@ -30,9 +32,14 @@ if __name__ == "__main__":
     camera.enable(timestep)
     keyboard.enable(timestep)
     accelerometer.enable(timestep)
+    compass.enable(timestep)
+    lidar.enable(timestep)
+    lidar.enablePointCloud()
     
     # Data collection setup
-    data_queue = queue.Queue()
+    accel_queue = queue.Queue()
+    compass_queue = queue.Queue()
+    lidar_queue = queue.Queue()
     stop_thread = threading.Event()
     
     # Create data directory with timestamp
@@ -40,31 +47,41 @@ if __name__ == "__main__":
     data_dir = f"data/{timestamp}"
     os.makedirs(data_dir, exist_ok=True)
     accel_file = os.path.join(data_dir, "accelerometer.pkl")
+    compass_file = os.path.join(data_dir, "compass.pkl")
+    lidar_file = os.path.join(data_dir, "lidar.pkl")
     
-    # Background thread function for saving accelerometer data
-    def save_accelerometer_data():
+    # Background thread function for saving sensor data
+    def save_sensor_data(sensor_queue, output_file):
         data = []
         while not stop_thread.is_set():
             try:
                 # Get data from queue with a timeout to check stop condition
-                accel_data, sim_time = data_queue.get(timeout=1.0)
-                data.append((sim_time, accel_data))
+                sensor_data, sim_time = sensor_queue.get(timeout=1.0)
+                data.append((sim_time, sensor_data))
                 # Save periodically to avoid data loss
                 if len(data) >= 100:  # Save every 100 samples
-                    with open(accel_file, 'wb') as f:
+                    with open(output_file, 'wb') as f:
                         pickle.dump(data, f)
                     data = []  # Reset data list after saving
             except queue.Empty:
                 continue
         # Save any remaining data when stopping
         if data:
-            with open(accel_file, 'wb') as f:
+            with open(output_file, 'wb') as f:
                 pickle.dump(data, f)
     
-    # Start background thread for data saving
-    data_thread = threading.Thread(target=save_accelerometer_data)
-    data_thread.daemon = True  # Ensure thread exits when main program exits
-    data_thread.start()
+    # Start background threads for data saving
+    accel_thread = threading.Thread(target=save_sensor_data, args=(accel_queue, accel_file))
+    compass_thread = threading.Thread(target=save_sensor_data, args=(compass_queue, compass_file))
+    lidar_thread = threading.Thread(target=save_sensor_data, args=(lidar_queue, lidar_file))
+    
+    accel_thread.daemon = True
+    compass_thread.daemon = True
+    lidar_thread.daemon = True
+    
+    accel_thread.start()
+    compass_thread.start()
+    lidar_thread.start()
     
     # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
     while robot.step(timestep) != -1:
@@ -101,11 +118,18 @@ if __name__ == "__main__":
         motor_l.setVelocity(speed_l)
         motor_r.setVelocity(speed_r)
         
-        # Collect accelerometer data with simulation time
+        # Collect sensor data with simulation time
         sim_time = robot.getTime()
         accel_data = accelerometer.getValues()  # Returns [x, y, z]
-        data_queue.put((accel_data, sim_time))
+        compass_data = compass.getValues()  # Returns [x, y, z] (north direction)
+        lidar_data = lidar.getPointCloud()  # Returns list of points
+        
+        accel_queue.put((accel_data, sim_time))
+        compass_queue.put((compass_data, sim_time))
+        lidar_queue.put((lidar_data, sim_time))
     
-    # Cleanup: stop the background thread and ensure final data save
+    # Cleanup: stop the background threads and ensure final data save
     stop_thread.set()
-    data_thread.join()
+    accel_thread.join()
+    compass_thread.join()
+    lidar_thread.join()
