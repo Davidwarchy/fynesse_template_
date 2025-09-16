@@ -4,6 +4,7 @@ import pickle
 import os
 from datetime import datetime
 import queue
+import numpy as np
 
 if __name__ == "__main__":
     # Create the Robot instance.
@@ -120,9 +121,11 @@ if __name__ == "__main__":
         
         # Collect sensor data with simulation time
         sim_time = robot.getTime()
-        accel_data = accelerometer.getValues()  # Returns [x, y, z]
-        compass_data = compass.getValues()  # Returns [x, y, z] (north direction)
-        lidar_data = lidar.getPointCloud()  # Returns list of points
+        accel_data = np.array(accelerometer.getValues(), dtype=np.float32)  # Convert to NumPy array
+        compass_data = np.array(compass.getValues(), dtype=np.float32)  # Convert to NumPy array
+        # Convert LIDAR point cloud to NumPy array (list of [x, y, z] points)
+        lidar_points = lidar.getPointCloud()
+        lidar_data = np.array([(p.x, p.y, p.z) for p in lidar_points], dtype=np.float32) if lidar_points else np.array([], dtype=np.float32)
         
         accel_queue.put((accel_data, sim_time))
         compass_queue.put((compass_data, sim_time))

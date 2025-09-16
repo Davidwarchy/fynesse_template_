@@ -37,6 +37,17 @@ Let's first try with accelerometer, I think that we are going to need a driver f
 
 We can use the simulation time as an index for each reading
 
+I think that we need to specify the structure of each sensor reading because they are quite very different. 
+
+#### Accelerometer
+Shape: (3,)
+
+#### Compass 
+Shape: (3,)
+
+#### Lidar 
+Shape: (2048, 3)
+
 ### Real to Sim Gap 
 * [List of some gaps](https://chatgpt.com/share/68c81135-1118-8002-975e-974bc2d90bb0)
 > Instead of the usual real to sim gap, we'll sort of reverse collections from simulation to integrate weaknesses in the real world...

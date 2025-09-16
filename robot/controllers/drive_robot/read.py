@@ -55,7 +55,7 @@ def read_pickle_data(pickle_file, n):
 
 if __name__ == "__main__":
     # Construct the pickle file path
-    pickle_file = "robot/controllers/drive_robot/data/2025-09-16-105955/lidar.pkl"
+    pickle_file = "robot/controllers/drive_robot/data/2025-09-16-111911/lidar.pkl"
     n_readings = 10 
     
     # Read and print the first n elements
