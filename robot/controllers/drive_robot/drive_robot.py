@@ -1,4 +1,9 @@
-from controller import Robot
+from controller import Robot, Accelerometer, Keyboard
+import threading
+import pickle
+import os
+from datetime import datetime
+import queue
 
 if __name__ == "__main__":
     # Create the Robot instance.
@@ -13,6 +18,7 @@ if __name__ == "__main__":
     motor_r = robot.getDevice("motor_2")
     camera = robot.getDevice("Astra rgb")
     keyboard = robot.getKeyboard()
+    accelerometer = robot.getDevice("accelerometer")
     
     # Set motor initial configurations
     motor_l.setPosition(float('inf'))
@@ -23,8 +29,44 @@ if __name__ == "__main__":
     # Enable devices
     camera.enable(timestep)
     keyboard.enable(timestep)
+    accelerometer.enable(timestep)
     
-    # Main loop: perform simulation steps until Webots is stopping the controller
+    # Data collection setup
+    data_queue = queue.Queue()
+    stop_thread = threading.Event()
+    
+    # Create data directory with timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    data_dir = f"data/{timestamp}"
+    os.makedirs(data_dir, exist_ok=True)
+    accel_file = os.path.join(data_dir, "accelerometer.pkl")
+    
+    # Background thread function for saving accelerometer data
+    def save_accelerometer_data():
+        data = []
+        while not stop_thread.is_set():
+            try:
+                # Get data from queue with a timeout to check stop condition
+                accel_data, sim_time = data_queue.get(timeout=1.0)
+                data.append((sim_time, accel_data))
+                # Save periodically to avoid data loss
+                if len(data) >= 100:  # Save every 100 samples
+                    with open(accel_file, 'wb') as f:
+                        pickle.dump(data, f)
+                    data = []  # Reset data list after saving
+            except queue.Empty:
+                continue
+        # Save any remaining data when stopping
+        if data:
+            with open(accel_file, 'wb') as f:
+                pickle.dump(data, f)
+    
+    # Start background thread for data saving
+    data_thread = threading.Thread(target=save_accelerometer_data)
+    data_thread.daemon = True  # Ensure thread exits when main program exits
+    data_thread.start()
+    
+    # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
     while robot.step(timestep) != -1:
         # Initialize motor speeds
         speed_l = 0.0
@@ -32,6 +74,10 @@ if __name__ == "__main__":
         
         # Get keyboard input
         key = keyboard.getKey()
+        
+        # Check for 'Q' to quit the simulation
+        if key == ord('Q'):
+            break
         
         # Define movement based on key pressed
         if key == ord('W') or key == keyboard.UP:
@@ -54,5 +100,12 @@ if __name__ == "__main__":
         # Set motor speeds
         motor_l.setVelocity(speed_l)
         motor_r.setVelocity(speed_r)
+        
+        # Collect accelerometer data with simulation time
+        sim_time = robot.getTime()
+        accel_data = accelerometer.getValues()  # Returns [x, y, z]
+        data_queue.put((accel_data, sim_time))
     
-    # Enter exit cleanup code here (if necessary).
+    # Cleanup: stop the background thread and ensure final data save
+    stop_thread.set()
+    data_thread.join()

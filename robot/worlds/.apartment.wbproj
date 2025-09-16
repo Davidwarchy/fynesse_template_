@@ -7,4 +7,6 @@ centralWidgetVisible: 1
 orthographicViewHeight: 1
 textFiles: -1
 consoles: Console:All:All
+renderingDevicePerspectives: robot_180000_um_0:Astra depth;1;1;0;0
+renderingDevicePerspectives: robot_180000_um_0:Astra rgb;1;1;0;0
 renderingDevicePerspectives: robot_180000_um_0:display;1;1;0;0

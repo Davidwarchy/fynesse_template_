@@ -190,6 +190,12 @@ DEF RbtWhse Robot {
     Pose {
       translation 0 0 0.32
       children [
+        Accelerometer {
+        }
+        Compass {
+        }
+        Lidar {
+        }
         InertialUnit {
           rotation 0 0 1 -1.5707996938995747
           name "imu"
@@ -202,7 +208,6 @@ DEF RbtWhse Robot {
           rotation 0 0 1 -1.5707953071795862
         }
         DEF DISPLAY Display {
-          name "display"
           width 512
           height 512
         }
