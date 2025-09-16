@@ -195,3 +195,5 @@ ehthumbs.db
 Desktop.ini
 cache/
 x*.py
+robot/controllers/drive_robot/data
+    

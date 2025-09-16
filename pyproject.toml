@@ -2,11 +2,11 @@
 name = "fynesse"
 version = "0.1.0"
 description = "Template files for performing fynesse pipeline data analysis with python."
-authors = ["Firstname Lastname <emal@domain.here>"]
-maintainers = ["Firstname Lastname <emal@domain.here>"]
+authors = ["David Warutumo <davidwarchy@gmail.com>"]
+maintainers = ["David Warutumo <davidwarchy@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-keywords = ["data-science", "analysis", "framework", "access", "assess", "address"]
+keywords = ["robotics", "data-science", "analysis", "framework", "access", "assess", "address"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -45,10 +45,10 @@ types-pyyaml = "^6.0.12.20250822"
 bokeh = "^3.0.0"
 
 [tool.poetry.urls]
-Homepage = "https://github.com/lawrennd/fynesse_template"
-Repository = "https://github.com/lawrennd/fynesse_template"
-Documentation = "https://github.com/lawrennd/fynesse_template#readme"
-Issues = "https://github.com/lawrennd/fynesse_template/issues"
+Homepage = "https://github.com/davidwarchy/fynesse_template_"
+Repository = "https://github.com/davidwarchy/fynesse_template_"
+Documentation = "https://github.com/davidwarchy/fynesse_template_#readme"
+Issues = "https://github.com/davidwarchy/fynesse_template_/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["fynesse/tests"]
