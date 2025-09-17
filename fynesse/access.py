@@ -2,6 +2,7 @@ from typing import Union
 import pandas as pd
 import logging
 import os
+import json
 
 # Set up basic logging
 logging.basicConfig(
@@ -9,17 +10,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-def data(folder: str = "data", sensor: str = "gyro") -> Union[pd.DataFrame, None]:
+def data(folder: str = "data") -> Union[pd.DataFrame, None]:
     """
     Read the data from a folder (default = "data"), returning a structured format such as a DataFrame.
+    If sensor is specified, loads data for that sensor only. If sensor is None or empty, combines data
+    from all CSV-convertible sensors listed in sensors.json in a sparse wide format with a sensor column.
 
     IMPLEMENTATION GUIDE
     ====================
 
     1. LOAD DATA:
-       - Attempts to load `data.csv` from the given folder.
+       - Loads sensors.json from robot/controllers/drive_robot/sensors.json.
+       - If sensor is specified, loads only that sensor's data.csv.
+       - If sensor is None or empty, loads and combines data from all CSV-convertible sensors.
        - Folder defaults to "data".
+       - Dynamically creates a unified column set from csv_columns in sensors.json.
 
     2. ERROR HANDLING:
        - Missing folder → log + return None
@@ -32,10 +37,11 @@ def data(folder: str = "data", sensor: str = "gyro") -> Union[pd.DataFrame, None
        - Logs detailed error messages
 
     Args:
-        folder (str, optional): Path to folder containing `data.csv`. Defaults to "data".
+        folder (str, optional): Path to folder containing sensor data CSVs. Defaults to "data".
+        sensor (str, optional): Specific sensor to load data for. If None or empty, combines all CSV sensors. Defaults to "gyro".
 
     Returns:
-        pd.DataFrame or None
+        pd.DataFrame or None: DataFrame in sparse wide format with sensor column or None on error.
     """
     logger.info(f"Starting data access operation in folder: {folder}")
 
@@ -45,42 +51,107 @@ def data(folder: str = "data", sensor: str = "gyro") -> Union[pd.DataFrame, None
         print(f"Error: Folder not found -> {folder}")
         return None
 
-    file_path = os.path.join(folder, f"{sensor}.csv")
-
+    # Load sensors.json
+    sensors_file = os.path.join("robot", "controllers", "drive_robot", "sensors.json")
     try:
-        # Try to load the CSV
-        logger.info(f"Loading data from {file_path}")
-        df = pd.read_csv(file_path)
-
-        # Validate content
-        if df.empty:
-            logger.warning(f"Loaded file is empty: {file_path}")
-            print(f"Warning: The file {file_path} is empty.")
-            return None
-
-        logger.info(
-            f"Successfully loaded data: {len(df)} rows, {len(df.columns)} columns"
-        )
-        return df
-
+        with open(sensors_file, 'r') as f:
+            sensors_config = json.load(f)
     except FileNotFoundError:
-        logger.error(f"Data file not found: {file_path}")
-        print(f"Error: Could not find file -> {file_path}")
+        logger.error(f"Sensors configuration file not found: {sensors_file}")
+        print(f"Error: Could not find sensors.json -> {sensors_file}")
         return None
-    except PermissionError:
-        logger.error(f"Permission denied when accessing: {file_path}")
-        print(f"Error: Permission denied -> {file_path}")
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing sensors.json: {e}")
+        print(f"Error parsing sensors.json: {e}")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error loading data: {e}")
-        print(f"Error loading data from {file_path}: {e}")
+        logger.error(f"Unexpected error loading sensors.json: {e}")
+        print(f"Error loading sensors.json: {e}")
+        return None
+
+    # Filter sensors that can be converted to CSV
+    csv_sensors = [s for s in sensors_config if s.get("can_csv", False)]
+
+    # Dynamically create unified column set from csv_columns
+    all_columns = set()
+    for sensor in csv_sensors:
+        all_columns.update(sensor["csv_columns"])
+    all_columns = list(all_columns) + ["sensor"]
+
+    # If no sensor specified, combine data from all CSV-convertible sensors
+    dataframes = []
+    for s in csv_sensors:
+        sensor_name = s["name"]
+        file_path = os.path.join(folder, f"{sensor_name}.csv")
+        try:
+            logger.info(f"Loading data from {file_path}")
+            df = pd.read_csv(file_path)
+
+            if df.empty:
+                logger.warning(f"Loaded file is empty: {file_path}")
+                print(f"Warning: The file {file_path} is empty.")
+                continue
+
+            # Map sensor-specific columns to unified columns
+            column_mapping = {
+                f"value_{i}": name for i, name in enumerate(s["csv_columns"])
+            }
+            column_mapping["sim_time"] = "sim_time"  # keep time as is
+
+            df = df.rename(columns=column_mapping)
+
+            # Add sensor column
+            df["sensor"] = sensor_name
+
+            # Ensure all unified columns are present, fill with NaN where needed
+            for col in all_columns:
+                if col not in df.columns:
+                    df[col] = pd.NA
+
+            dataframes.append(df)
+            logger.info(
+                f"Successfully loaded data for {sensor_name}: {len(df)} rows, {len(df.columns)} columns"
+            )
+
+        except FileNotFoundError:
+            logger.error(f"Data file not found: {file_path}")
+            print(f"Error: Could not find file -> {file_path}")
+            continue
+        except PermissionError:
+            logger.error(f"Permission denied when accessing: {file_path}")
+            print(f"Error: Permission denied -> {file_path}")
+            continue
+        except Exception as e:
+            logger.error(f"Unexpected error loading data: {e}")
+            print(f"Error loading data from {file_path}: {e}")
+            continue
+
+    if not dataframes:
+        logger.error("No valid data loaded from any sensor")
+        print("Error: No valid data loaded from any sensor")
+        return None
+
+    # Combine all DataFrames
+    try:
+        combined_df = pd.concat(dataframes, ignore_index=True)
+        logger.info(
+            f"Successfully combined data: {len(combined_df)} rows, {len(combined_df.columns)} columns"
+        )
+        combined_df.to_csv('x.csv')
+        return combined_df
+
+    except Exception as e:
+        logger.error(f"Error combining DataFrames: {e}")
+        print(f"Error combining DataFrames: {e}")
         return None
 
 
 if __name__ == "__main__":
     # Test the data access function
     dir = "data/noiseless/2025-09-17-095442"
-    sensor = "compass" 
-    
-    df = data(dir, sensor)
-    print(df.head())
+
+    # Test with all sensors
+    df_all = data(dir)
+    if df_all is not None:
+        print("\nCombined DataFrame for all sensors:")
+        print(df_all.head())

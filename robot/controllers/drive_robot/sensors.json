@@ -5,7 +5,8 @@
         "shape": [
             3
         ], 
-        "can_csv": true
+        "can_csv": true,
+        "csv_columns": ["x", "y", "z"]
     },
     {
         "id": 2,
@@ -13,7 +14,8 @@
         "shape": [
             3
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["x", "y", "z"]
     },
     {
         "id": 3,
@@ -21,7 +23,8 @@
         "shape": [
             3
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["lat", "lon", "alt"]
     },
     {
         "id": 4,
@@ -29,7 +32,8 @@
         "shape": [
             3
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["x", "y", "z"]
     },
     {
         "id": 5,
@@ -37,7 +41,8 @@
         "shape": [
             1
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["distance"]
     },
     {
         "id": 6,
@@ -45,7 +50,8 @@
         "shape": [
             1
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["light_intensity"]
     },
     {
         "id": 7,
@@ -53,7 +59,8 @@
         "shape": [
             3
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["x", "y", "z"]
     },
     {
         "id": 8,
@@ -61,7 +68,8 @@
         "shape": [
             2
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["left_wheel", "right_wheel"]
     },
     {
         "id": 9,
@@ -69,7 +77,8 @@
         "shape": [
             3
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["roll", "pitch", "yaw"]
     },
     {
         "id": 10,
@@ -77,7 +86,8 @@
         "shape": [
             1
         ],
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["left_wheel_position"]
     },
     {
         "id": 11,
@@ -85,7 +95,8 @@
         "shape": [
             1
         ], 
-        "can_csv": true
+        "can_csv": true, 
+        "csv_columns": ["right_wheel_position"]
     },
     {
         "id": 13,
