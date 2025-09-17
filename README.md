@@ -10,17 +10,17 @@ We’re building a dataset of sensor and actuator readings from a cylindrical tw
 ## Access
 ### Sensors 
 * Collect a variety of sensor readings:
-- IMU (gyroscope, accelerometer) 
-- GPS 
+- [x] IMU (gyroscope, accelerometer) 
+- [x] GPS 
 - Depth camera 
 - Camera 
-- Lidar 
-- Compass 
-- Distance 
-- Light sensor 
-- Position sensor
+- [x] Lidar 
+- [x] Compass 
+- [x] Distance sensor
+- [x] Light sensor 
+- Position sensor (position encoder)
 - Radar 
-- Touch sensor 
+- [x] Touch sensor 
 
 ### Actuators 
 * Actuator commands 

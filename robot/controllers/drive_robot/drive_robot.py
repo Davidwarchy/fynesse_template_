@@ -1,4 +1,4 @@
-from controller import Robot, Accelerometer, Keyboard, Compass, Lidar, GPS, Gyro, InertialUnit, LightSensor, TouchSensor
+from controller import Robot, Accelerometer, Keyboard, Compass, Lidar, GPS, Gyro, InertialUnit, LightSensor, TouchSensor, DistanceSensor, PositionSensor
 import threading
 import pickle
 import os
@@ -27,6 +27,9 @@ if __name__ == "__main__":
     imu = robot.getDevice("imu")
     light_sensor = robot.getDevice("light sensor")
     touch_sensor = robot.getDevice("touch sensor")
+    distance_sensor = robot.getDevice("distance sensor")  # New DistanceSensor
+    position_sensor_1 = robot.getDevice("position_sensor_1")  # New PositionSensor 1
+    position_sensor_2 = robot.getDevice("position_sensor_2")  # New PositionSensor 2
     
     # Set motor initial configurations
     motor_l.setPosition(float('inf'))
@@ -46,6 +49,9 @@ if __name__ == "__main__":
     imu.enable(timestep)
     light_sensor.enable(timestep)
     touch_sensor.enable(timestep)
+    distance_sensor.enable(timestep)  # Enable DistanceSensor
+    position_sensor_1.enable(timestep)  # Enable PositionSensor 1
+    position_sensor_2.enable(timestep)  # Enable PositionSensor 2
     
     # Data collection setup
     accel_queue = queue.Queue()
@@ -56,6 +62,9 @@ if __name__ == "__main__":
     imu_queue = queue.Queue()
     light_queue = queue.Queue()
     touch_queue = queue.Queue()
+    distance_queue = queue.Queue()  # New queue for DistanceSensor
+    position_1_queue = queue.Queue()  # New queue for PositionSensor 1
+    position_2_queue = queue.Queue()  # New queue for PositionSensor 2
     actuator_queue = queue.Queue()
     stop_thread = threading.Event()
     
@@ -71,6 +80,9 @@ if __name__ == "__main__":
     imu_file = os.path.join(data_dir, "imu.pkl")
     light_file = os.path.join(data_dir, "light.pkl")
     touch_file = os.path.join(data_dir, "touch.pkl")
+    distance_file = os.path.join(data_dir, "distance.pkl")  # New file for DistanceSensor
+    position_1_file = os.path.join(data_dir, "position_1.pkl")  # New file for PositionSensor 1
+    position_2_file = os.path.join(data_dir, "position_2.pkl")  # New file for PositionSensor 2
     actuator_file = os.path.join(data_dir, "actuator.pkl")
     
     # Background thread function for saving sensor/actuator data
@@ -102,6 +114,9 @@ if __name__ == "__main__":
     imu_thread = threading.Thread(target=save_sensor_data, args=(imu_queue, imu_file))
     light_thread = threading.Thread(target=save_sensor_data, args=(light_queue, light_file))
     touch_thread = threading.Thread(target=save_sensor_data, args=(touch_queue, touch_file))
+    distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file))  # New thread for DistanceSensor
+    position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file))  # New thread for PositionSensor 1
+    position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file))  # New thread for PositionSensor 2
     actuator_thread = threading.Thread(target=save_sensor_data, args=(actuator_queue, actuator_file))
     
     accel_thread.daemon = True
@@ -112,6 +127,9 @@ if __name__ == "__main__":
     imu_thread.daemon = True
     light_thread.daemon = True
     touch_thread.daemon = True
+    distance_thread.daemon = True  # Set daemon for DistanceSensor thread
+    position_1_thread.daemon = True  # Set daemon for PositionSensor 1 thread
+    position_2_thread.daemon = True  # Set daemon for PositionSensor 2 thread
     actuator_thread.daemon = True
     
     accel_thread.start()
@@ -122,6 +140,9 @@ if __name__ == "__main__":
     imu_thread.start()
     light_thread.start()
     touch_thread.start()
+    distance_thread.start()  # Start DistanceSensor thread
+    position_1_thread.start()  # Start PositionSensor 1 thread
+    position_2_thread.start()  # Start PositionSensor 2 thread
     actuator_thread.start()
     
     # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
@@ -161,15 +182,15 @@ if __name__ == "__main__":
         
         # Collect sensor and actuator data with simulation time
         sim_time = robot.getTime()
-        accel_data = np.array(accelerometer.getValues(), dtype=np.float32)  # Convert to NumPy array
-        compass_data = np.array(compass.getValues(), dtype=np.float32)  # Convert to NumPy array
+        accel_data = np.array(accelerometer.getValues(), dtype=np.float32)  # [x, y, z]
+        compass_data = np.array(compass.getValues(), dtype=np.float32)  # [x, y, z]
         lidar_points = lidar.getPointCloud()
         lidar_data = np.array([(p.x, p.y, p.z) for p in lidar_points], dtype=np.float32) if lidar_points else np.array([], dtype=np.float32)
         gps_data = np.array(gps.getValues(), dtype=np.float32)  # [x, y, z]
         gyro_data = np.array(gyro.getValues(), dtype=np.float32)  # [angular velocity x, y, z]
         imu_data = np.array(imu.getRollPitchYaw(), dtype=np.float32)  # [roll, pitch, yaw]
         light_data = np.array([light_sensor.getValue()], dtype=np.float32)  # Single value
-
+        
         # Handle TouchSensor data
         sensor_type = touch_sensor.getType()  # Get sensor type
         if sensor_type == TouchSensor.BUMPER:
@@ -187,8 +208,13 @@ if __name__ == "__main__":
             # Fallback for unknown type
             touch_data = np.array([], dtype=np.float32)
             print(f"Warning: Unknown touch sensor type {sensor_type}")
-
-        print(f'Touch Sensor Data: {touch_data}')
+        
+        # Handle DistanceSensor data
+        distance_data = np.array([distance_sensor.getValue()], dtype=np.float32)  # Single distance value
+        
+        # Handle PositionSensor data
+        position_1_data = np.array([position_sensor_1.getValue()], dtype=np.float32)  # Single position value
+        position_2_data = np.array([position_sensor_2.getValue()], dtype=np.float32)  # Single position value
         
         actuator_data = np.array([speed_l, speed_r], dtype=np.float32)  # Left and right motor speeds
         
@@ -200,6 +226,9 @@ if __name__ == "__main__":
         imu_queue.put((imu_data, sim_time))
         light_queue.put((light_data, sim_time))
         touch_queue.put((touch_data, sim_time))
+        distance_queue.put((distance_data, sim_time))  # Queue DistanceSensor data
+        position_1_queue.put((position_1_data, sim_time))  # Queue PositionSensor 1 data
+        position_2_queue.put((position_2_data, sim_time))  # Queue PositionSensor 2 data
         actuator_queue.put((actuator_data, sim_time))
     
     # Cleanup: stop the background threads and ensure final data save
@@ -212,4 +241,7 @@ if __name__ == "__main__":
     imu_thread.join()
     light_thread.join()
     touch_thread.join()
+    distance_thread.join()  # Join DistanceSensor thread
+    position_1_thread.join()  # Join PositionSensor 1 thread
+    position_2_thread.join()  # Join PositionSensor 2 thread
     actuator_thread.join()

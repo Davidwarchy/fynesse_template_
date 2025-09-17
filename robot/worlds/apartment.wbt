@@ -42,7 +42,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.4060317414729578 0.40603290835639455 0.8187035496735586 1.7695128936691449
-  position -3.879934779521019 -14.284005020800887 15.888926422025028
+  position -3.879980071089499 -7.366335393842524 6.7891234797361655
   exposure 0.5
 }
 TexturedBackground {
@@ -120,6 +120,9 @@ DEF RbtWhse Robot {
         anchor 0.18 0 0.1
       }
       device [
+        PositionSensor {
+          name "position_sensor_1"
+        }
         RotationalMotor {
           name "motor_1"
         }
@@ -150,6 +153,9 @@ DEF RbtWhse Robot {
         anchor -0.18 0 0.1
       }
       device [
+        PositionSensor {
+          name "position_sensor_2"
+        }
         RotationalMotor {
           name "motor_2"
         }
@@ -190,6 +196,10 @@ DEF RbtWhse Robot {
     Pose {
       translation 0 0 0.32
       children [
+        DistanceSensor {
+          translation 1.8353e-07 -0.18 0
+          rotation 0 0 1 -1.5707953071795862
+        }
         LightSensor {
         }
         TouchSensor {
