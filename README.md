@@ -69,7 +69,6 @@ We can have a system capable of automatically collating data and sort of automat
 ## Address 
 > Which sensors give redundant information 
 > Which sensors predict other sensors well 
-> 
 
 ## Stuff to Look at 
 PCA components for localization.

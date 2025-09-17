@@ -190,6 +190,13 @@ DEF RbtWhse Robot {
     Pose {
       translation 0 0 0.32
       children [
+        LightSensor {
+        }
+        TouchSensor {
+          type "force-3d"
+        }
+        Gyro {
+        }
         Accelerometer {
         }
         Compass {
