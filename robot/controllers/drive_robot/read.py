@@ -2,6 +2,7 @@ import pickle
 import os
 import argparse
 from datetime import datetime
+import numpy as np
 
 def read_pickle_data(pickle_file, n):
     """
@@ -28,7 +29,7 @@ def read_pickle_data(pickle_file, n):
         
         # Determine the number of columns dynamically
         first_data = data[0][1]  # Access the sensor data part of the first tuple
-        num_columns = len(first_data) if isinstance(first_data, (list, tuple)) else 1
+        num_columns = len(first_data) if isinstance(first_data, (list, tuple, np.ndarray)) else 1
         
         # Create header based on number of columns
         if num_columns == 1:
@@ -55,7 +56,7 @@ def read_pickle_data(pickle_file, n):
 
 if __name__ == "__main__":
     # Construct the pickle file path
-    pickle_file = "robot/controllers/drive_robot/data/2025-09-16-111911/lidar.pkl"
+    pickle_file = "robot/controllers/drive_robot/data/2025-09-17-095442/actuator.pkl"
     n_readings = 10 
     
     # Read and print the first n elements

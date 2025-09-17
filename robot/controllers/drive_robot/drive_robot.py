@@ -18,7 +18,7 @@ if __name__ == "__main__":
     motor_l = robot.getDevice("motor_1")
     motor_r = robot.getDevice("motor_2")
     rgb_camera = robot.getDevice("Astra rgb")
-    depth_camera = robot.getDevice("Astra depth")  # New Depth Camera
+    depth_camera = robot.getDevice("Astra depth")
     keyboard = robot.getKeyboard()
     accelerometer = robot.getDevice("accelerometer")
     compass = robot.getDevice("compass")
@@ -39,8 +39,8 @@ if __name__ == "__main__":
     motor_r.setVelocity(0.0) 
     
     # Enable devices
-    # rgb_camera.enable(timestep)
-    depth_camera.enable(timestep * 4)  # Enable Depth Camera
+    rgb_camera.enable(timestep)
+    depth_camera.enable(timestep * 10)
     keyboard.enable(timestep)
     accelerometer.enable(timestep)
     compass.enable(timestep)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     distance_queue = queue.Queue()
     position_1_queue = queue.Queue()
     position_2_queue = queue.Queue()
-    depth_queue = queue.Queue()  # New queue for Depth Camera
+    depth_queue = queue.Queue()
     actuator_queue = queue.Queue()
     stop_thread = threading.Event()
     
@@ -86,17 +86,49 @@ if __name__ == "__main__":
     distance_file = os.path.join(data_dir, "distance.pkl")
     position_1_file = os.path.join(data_dir, "position_1.pkl")
     position_2_file = os.path.join(data_dir, "position_2.pkl")
-    depth_file = os.path.join(data_dir, "depth.pkl")  # New file for Depth Camera
+    depth_file = os.path.join(data_dir, "depth.pkl")
     actuator_file = os.path.join(data_dir, "actuator.pkl")
     
     # Background thread function for saving sensor/actuator data
-    def save_sensor_data(sensor_queue, output_file):
+    def save_sensor_data(sensor_queue, output_file, sensor_type):
         data = []
         while not stop_thread.is_set():
             try:
-                sensor_data, sim_time = sensor_queue.get(timeout=1.0)
+                raw_data, sim_time = sensor_queue.get(timeout=1.0)
+                # Convert raw data to NumPy array based on sensor type
+                if sensor_type == "accelerometer":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "compass":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "lidar":
+                    sensor_data = np.array([(p.x, p.y, p.z) for p in raw_data], dtype=np.float32) if raw_data else np.array([], dtype=np.float32)
+                elif sensor_type == "gps":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "gyro":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "imu":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "light":
+                    sensor_data = np.array([raw_data], dtype=np.float32)
+                elif sensor_type == "touch":
+                    if isinstance(raw_data, float):  # Bumper or Force sensor
+                        sensor_data = np.array([raw_data], dtype=np.float32)
+                    else:  # Force3D sensor
+                        sensor_data = np.array([raw_data[i] for i in range(3)], dtype=np.float32)
+                elif sensor_type == "distance":
+                    sensor_data = np.array([raw_data], dtype=np.float32)
+                elif sensor_type == "position_1" or sensor_type == "position_2":
+                    sensor_data = np.array([raw_data], dtype=np.float32)
+                elif sensor_type == "depth":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                elif sensor_type == "actuator":
+                    sensor_data = np.array(raw_data, dtype=np.float32)
+                else:
+                    sensor_data = np.array([], dtype=np.float32)
+                    print(f"Warning: Unknown sensor type {sensor_type}")
+                
                 data.append((sim_time, sensor_data))
-                if len(data) >= 500:
+                if len(data) >= 500:  # Save every 500 samples
                     with open(output_file, 'wb') as f:
                         pickle.dump(data, f)
                     data = []
@@ -107,19 +139,19 @@ if __name__ == "__main__":
                 pickle.dump(data, f)
     
     # Start background threads for data saving
-    accel_thread = threading.Thread(target=save_sensor_data, args=(accel_queue, accel_file))
-    compass_thread = threading.Thread(target=save_sensor_data, args=(compass_queue, compass_file))
-    lidar_thread = threading.Thread(target=save_sensor_data, args=(lidar_queue, lidar_file))
-    gps_thread = threading.Thread(target=save_sensor_data, args=(gps_queue, gps_file))
-    gyro_thread = threading.Thread(target=save_sensor_data, args=(gyro_queue, gyro_file))
-    imu_thread = threading.Thread(target=save_sensor_data, args=(imu_queue, imu_file))
-    light_thread = threading.Thread(target=save_sensor_data, args=(light_queue, light_file))
-    touch_thread = threading.Thread(target=save_sensor_data, args=(touch_queue, touch_file))
-    distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file))
-    position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file))
-    position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file))
-    depth_thread = threading.Thread(target=save_sensor_data, args=(depth_queue, depth_file))  # New thread for Depth Camera
-    actuator_thread = threading.Thread(target=save_sensor_data, args=(actuator_queue, actuator_file))
+    accel_thread = threading.Thread(target=save_sensor_data, args=(accel_queue, accel_file, "accelerometer"))
+    compass_thread = threading.Thread(target=save_sensor_data, args=(compass_queue, compass_file, "compass"))
+    lidar_thread = threading.Thread(target=save_sensor_data, args=(lidar_queue, lidar_file, "lidar"))
+    gps_thread = threading.Thread(target=save_sensor_data, args=(gps_queue, gps_file, "gps"))
+    gyro_thread = threading.Thread(target=save_sensor_data, args=(gyro_queue, gyro_file, "gyro"))
+    imu_thread = threading.Thread(target=save_sensor_data, args=(imu_queue, imu_file, "imu"))
+    light_thread = threading.Thread(target=save_sensor_data, args=(light_queue, light_file, "light"))
+    touch_thread = threading.Thread(target=save_sensor_data, args=(touch_queue, touch_file, "touch"))
+    distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file, "distance"))
+    position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file, "position_1"))
+    position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file, "position_2"))
+    depth_thread = threading.Thread(target=save_sensor_data, args=(depth_queue, depth_file, "depth"))
+    actuator_thread = threading.Thread(target=save_sensor_data, args=(actuator_queue, actuator_file, "actuator"))
     
     accel_thread.daemon = True
     compass_thread.daemon = True
@@ -132,7 +164,7 @@ if __name__ == "__main__":
     distance_thread.daemon = True
     position_1_thread.daemon = True
     position_2_thread.daemon = True
-    depth_thread.daemon = True  # Set daemon for Depth Camera thread
+    depth_thread.daemon = True
     actuator_thread.daemon = True
     
     accel_thread.start()
@@ -146,7 +178,7 @@ if __name__ == "__main__":
     distance_thread.start()
     position_1_thread.start()
     position_2_thread.start()
-    depth_thread.start()  # Start Depth Camera thread
+    depth_thread.start()
     actuator_thread.start()
     
     # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
@@ -180,44 +212,21 @@ if __name__ == "__main__":
         motor_l.setVelocity(speed_l)
         motor_r.setVelocity(speed_r)
         
-        # Collect sensor and actuator data with simulation time
+        # Collect raw sensor and actuator data with simulation time
         sim_time = robot.getTime()
-        accel_data = np.array(accelerometer.getValues(), dtype=np.float32)  # [x, y, z]
-        compass_data = np.array(compass.getValues(), dtype=np.float32)  # [x, y, z]
-        lidar_points = lidar.getPointCloud()
-        lidar_data = np.array([(p.x, p.y, p.z) for p in lidar_points], dtype=np.float32) if lidar_points else np.array([], dtype=np.float32)
-        gps_data = np.array(gps.getValues(), dtype=np.float32)  # [x, y, z]
-        gyro_data = np.array(gyro.getValues(), dtype=np.float32)  # [angular velocity x, y, z]
-        imu_data = np.array(imu.getRollPitchYaw(), dtype=np.float32)  # [roll, pitch, yaw]
-        light_data = np.array([light_sensor.getValue()], dtype=np.float32)  # Single value
-        
-        # Handle TouchSensor data
-        sensor_type = touch_sensor.getType()  # Get sensor type
-        if sensor_type == TouchSensor.BUMPER:
-            # Bumper sensor returns a single value (0.0 or 1.0)
-            touch_data = np.array([touch_sensor.getValue()], dtype=np.float32)
-        elif sensor_type == TouchSensor.FORCE:
-            # Force sensor returns a single scalar force value
-            touch_data = np.array([touch_sensor.getValue()], dtype=np.float32)
-        elif sensor_type == TouchSensor.FORCE3D:
-            touch_values = touch_sensor.getValues()
-            touch_data = np.array([touch_values[i] for i in range(3)], dtype=np.float32)
-        else:
-            # Fallback for unknown type
-            touch_data = np.array([], dtype=np.float32)
-            print(f"Warning: Unknown touch sensor type {sensor_type}")
-        
-        # Handle DistanceSensor data
-        distance_data = np.array([distance_sensor.getValue()], dtype=np.float32)  # Single distance value
-        
-        # Handle PositionSensor data
-        position_1_data = np.array([position_sensor_1.getValue()], dtype=np.float32)  # Single position value
-        position_2_data = np.array([position_sensor_2.getValue()], dtype=np.float32)  # Single position value
-        
-        # Handle Depth Camera data
-        depth_data = np.array(depth_camera.getRangeImage(), dtype=np.float32)  # Depth image as 1D array
-        
-        actuator_data = np.array([speed_l, speed_r], dtype=np.float32)
+        accel_data = accelerometer.getValues()  # Raw list [x, y, z]
+        compass_data = compass.getValues()  # Raw list [x, y, z]
+        lidar_data = lidar.getPointCloud()  # Raw point cloud
+        gps_data = gps.getValues()  # Raw list [x, y, z]
+        gyro_data = gyro.getValues()  # Raw list [x, y, z]
+        imu_data = imu.getRollPitchYaw()  # Raw list [roll, pitch, yaw]
+        light_data = light_sensor.getValue()  # Raw float
+        touch_data = touch_sensor.getValue() if touch_sensor.getType() in [TouchSensor.BUMPER, TouchSensor.FORCE] else touch_sensor.getValues()  # Raw float or list
+        distance_data = distance_sensor.getValue()  # Raw float
+        position_1_data = position_sensor_1.getValue()  # Raw float
+        position_2_data = position_sensor_2.getValue()  # Raw float
+        depth_data = depth_camera.getRangeImage()  # Raw depth image list
+        actuator_data = [speed_l, speed_r]  # Raw list
         
         accel_queue.put((accel_data, sim_time))
         compass_queue.put((compass_data, sim_time))
@@ -230,7 +239,7 @@ if __name__ == "__main__":
         distance_queue.put((distance_data, sim_time))
         position_1_queue.put((position_1_data, sim_time))
         position_2_queue.put((position_2_data, sim_time))
-        depth_queue.put((depth_data, sim_time))  # Queue Depth Camera data
+        depth_queue.put((depth_data, sim_time))
         actuator_queue.put((actuator_data, sim_time))
     
     # Cleanup: stop the background threads and ensure final data save

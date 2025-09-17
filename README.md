@@ -64,7 +64,9 @@ After collecting the perfect data, we might want to do the following to introduc
 ## Assess 
 > Get means, standard devs, correlations
 
-We can have a system capable of automatically collating data and sort of automatically knowing which data links well with which data, which data gives us information on other data. 
+* We can have a system capable of automatically collating data and sort of automatically knowing which data links well with which data, which data gives us information on other data. 
+
+* A major question is when we have data of different dimensions. How do we assess relationships between data of different shapes? An example would be lidar data and compass data. Lidar has shape (2048, 3). 
 
 ## Address 
 > Which sensors give redundant information 
