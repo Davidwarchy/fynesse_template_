@@ -69,6 +69,10 @@ We have also created a script for reading the dataset pickle files. For example,
 
 The shapes of each of the sensor outputs are saved in [sensors.json](robot/controllers/drive_robot/sensors.json)
 
+The data is loaded from local sources. 
+
+The data is generated and accessed locally in simulation and released under. License is MIT. 
+
 
 ### Real to Sim Gap 
 * [List of some gaps](https://chatgpt.com/share/68c81135-1118-8002-975e-974bc2d90bb0)
