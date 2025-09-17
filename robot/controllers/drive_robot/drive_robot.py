@@ -1,4 +1,4 @@
-from controller import Robot, Accelerometer, Keyboard, Compass, Lidar, GPS, Gyro, InertialUnit, LightSensor, TouchSensor, DistanceSensor, PositionSensor
+from controller import Robot, Accelerometer, Keyboard, Compass, Lidar, GPS, Gyro, InertialUnit, LightSensor, TouchSensor, DistanceSensor, PositionSensor, Camera
 import threading
 import pickle
 import os
@@ -17,7 +17,8 @@ if __name__ == "__main__":
     # Initialize devices
     motor_l = robot.getDevice("motor_1")
     motor_r = robot.getDevice("motor_2")
-    camera = robot.getDevice("Astra rgb")
+    rgb_camera = robot.getDevice("Astra rgb")
+    depth_camera = robot.getDevice("Astra depth")  # New Depth Camera
     keyboard = robot.getKeyboard()
     accelerometer = robot.getDevice("accelerometer")
     compass = robot.getDevice("compass")
@@ -27,9 +28,9 @@ if __name__ == "__main__":
     imu = robot.getDevice("imu")
     light_sensor = robot.getDevice("light sensor")
     touch_sensor = robot.getDevice("touch sensor")
-    distance_sensor = robot.getDevice("distance sensor")  # New DistanceSensor
-    position_sensor_1 = robot.getDevice("position_sensor_1")  # New PositionSensor 1
-    position_sensor_2 = robot.getDevice("position_sensor_2")  # New PositionSensor 2
+    distance_sensor = robot.getDevice("distance sensor")
+    position_sensor_1 = robot.getDevice("position_sensor_1")
+    position_sensor_2 = robot.getDevice("position_sensor_2")
     
     # Set motor initial configurations
     motor_l.setPosition(float('inf'))
@@ -38,7 +39,8 @@ if __name__ == "__main__":
     motor_r.setVelocity(0.0) 
     
     # Enable devices
-    camera.enable(timestep)
+    # rgb_camera.enable(timestep)
+    depth_camera.enable(timestep * 4)  # Enable Depth Camera
     keyboard.enable(timestep)
     accelerometer.enable(timestep)
     compass.enable(timestep)
@@ -49,9 +51,9 @@ if __name__ == "__main__":
     imu.enable(timestep)
     light_sensor.enable(timestep)
     touch_sensor.enable(timestep)
-    distance_sensor.enable(timestep)  # Enable DistanceSensor
-    position_sensor_1.enable(timestep)  # Enable PositionSensor 1
-    position_sensor_2.enable(timestep)  # Enable PositionSensor 2
+    distance_sensor.enable(timestep)
+    position_sensor_1.enable(timestep)
+    position_sensor_2.enable(timestep)
     
     # Data collection setup
     accel_queue = queue.Queue()
@@ -62,9 +64,10 @@ if __name__ == "__main__":
     imu_queue = queue.Queue()
     light_queue = queue.Queue()
     touch_queue = queue.Queue()
-    distance_queue = queue.Queue()  # New queue for DistanceSensor
-    position_1_queue = queue.Queue()  # New queue for PositionSensor 1
-    position_2_queue = queue.Queue()  # New queue for PositionSensor 2
+    distance_queue = queue.Queue()
+    position_1_queue = queue.Queue()
+    position_2_queue = queue.Queue()
+    depth_queue = queue.Queue()  # New queue for Depth Camera
     actuator_queue = queue.Queue()
     stop_thread = threading.Event()
     
@@ -80,9 +83,10 @@ if __name__ == "__main__":
     imu_file = os.path.join(data_dir, "imu.pkl")
     light_file = os.path.join(data_dir, "light.pkl")
     touch_file = os.path.join(data_dir, "touch.pkl")
-    distance_file = os.path.join(data_dir, "distance.pkl")  # New file for DistanceSensor
-    position_1_file = os.path.join(data_dir, "position_1.pkl")  # New file for PositionSensor 1
-    position_2_file = os.path.join(data_dir, "position_2.pkl")  # New file for PositionSensor 2
+    distance_file = os.path.join(data_dir, "distance.pkl")
+    position_1_file = os.path.join(data_dir, "position_1.pkl")
+    position_2_file = os.path.join(data_dir, "position_2.pkl")
+    depth_file = os.path.join(data_dir, "depth.pkl")  # New file for Depth Camera
     actuator_file = os.path.join(data_dir, "actuator.pkl")
     
     # Background thread function for saving sensor/actuator data
@@ -90,17 +94,14 @@ if __name__ == "__main__":
         data = []
         while not stop_thread.is_set():
             try:
-                # Get data from queue with a timeout to check stop condition
                 sensor_data, sim_time = sensor_queue.get(timeout=1.0)
                 data.append((sim_time, sensor_data))
-                # Save periodically to avoid data loss
-                if len(data) >= 100:  # Save every 100 samples
+                if len(data) >= 500:
                     with open(output_file, 'wb') as f:
                         pickle.dump(data, f)
-                    data = []  # Reset data list after saving
+                    data = []
             except queue.Empty:
                 continue
-        # Save any remaining data when stopping
         if data:
             with open(output_file, 'wb') as f:
                 pickle.dump(data, f)
@@ -114,9 +115,10 @@ if __name__ == "__main__":
     imu_thread = threading.Thread(target=save_sensor_data, args=(imu_queue, imu_file))
     light_thread = threading.Thread(target=save_sensor_data, args=(light_queue, light_file))
     touch_thread = threading.Thread(target=save_sensor_data, args=(touch_queue, touch_file))
-    distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file))  # New thread for DistanceSensor
-    position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file))  # New thread for PositionSensor 1
-    position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file))  # New thread for PositionSensor 2
+    distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file))
+    position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file))
+    position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file))
+    depth_thread = threading.Thread(target=save_sensor_data, args=(depth_queue, depth_file))  # New thread for Depth Camera
     actuator_thread = threading.Thread(target=save_sensor_data, args=(actuator_queue, actuator_file))
     
     accel_thread.daemon = True
@@ -127,9 +129,10 @@ if __name__ == "__main__":
     imu_thread.daemon = True
     light_thread.daemon = True
     touch_thread.daemon = True
-    distance_thread.daemon = True  # Set daemon for DistanceSensor thread
-    position_1_thread.daemon = True  # Set daemon for PositionSensor 1 thread
-    position_2_thread.daemon = True  # Set daemon for PositionSensor 2 thread
+    distance_thread.daemon = True
+    position_1_thread.daemon = True
+    position_2_thread.daemon = True
+    depth_thread.daemon = True  # Set daemon for Depth Camera thread
     actuator_thread.daemon = True
     
     accel_thread.start()
@@ -140,9 +143,10 @@ if __name__ == "__main__":
     imu_thread.start()
     light_thread.start()
     touch_thread.start()
-    distance_thread.start()  # Start DistanceSensor thread
-    position_1_thread.start()  # Start PositionSensor 1 thread
-    position_2_thread.start()  # Start PositionSensor 2 thread
+    distance_thread.start()
+    position_1_thread.start()
+    position_2_thread.start()
+    depth_thread.start()  # Start Depth Camera thread
     actuator_thread.start()
     
     # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
@@ -160,19 +164,15 @@ if __name__ == "__main__":
         
         # Define movement based on key pressed
         if key == ord('W') or key == keyboard.UP:
-            # Move forward
             speed_l = 1.0 * speed_max
             speed_r = 1.0 * speed_max
         elif key == ord('S') or key == keyboard.DOWN:
-            # Move backward
             speed_l = -1.0 * speed_max
             speed_r = -1.0 * speed_max
         elif key == ord('A') or key == keyboard.LEFT:
-            # Turn left
             speed_l = -1.0 * speed_max
             speed_r = 1.0 * speed_max
         elif key == ord('D') or key == keyboard.RIGHT:
-            # Turn right
             speed_l = 1.0 * speed_max
             speed_r = -1.0 * speed_max
         
@@ -200,9 +200,7 @@ if __name__ == "__main__":
             # Force sensor returns a single scalar force value
             touch_data = np.array([touch_sensor.getValue()], dtype=np.float32)
         elif sensor_type == TouchSensor.FORCE3D:
-            # Force-3d sensor returns a 3D vector [x, y, z]
-            touch_values = touch_sensor.getValues()  # Returns LP_c_double
-            # Convert LP_c_double to list
+            touch_values = touch_sensor.getValues()
             touch_data = np.array([touch_values[i] for i in range(3)], dtype=np.float32)
         else:
             # Fallback for unknown type
@@ -216,7 +214,10 @@ if __name__ == "__main__":
         position_1_data = np.array([position_sensor_1.getValue()], dtype=np.float32)  # Single position value
         position_2_data = np.array([position_sensor_2.getValue()], dtype=np.float32)  # Single position value
         
-        actuator_data = np.array([speed_l, speed_r], dtype=np.float32)  # Left and right motor speeds
+        # Handle Depth Camera data
+        depth_data = np.array(depth_camera.getRangeImage(), dtype=np.float32)  # Depth image as 1D array
+        
+        actuator_data = np.array([speed_l, speed_r], dtype=np.float32)
         
         accel_queue.put((accel_data, sim_time))
         compass_queue.put((compass_data, sim_time))
@@ -226,9 +227,10 @@ if __name__ == "__main__":
         imu_queue.put((imu_data, sim_time))
         light_queue.put((light_data, sim_time))
         touch_queue.put((touch_data, sim_time))
-        distance_queue.put((distance_data, sim_time))  # Queue DistanceSensor data
-        position_1_queue.put((position_1_data, sim_time))  # Queue PositionSensor 1 data
-        position_2_queue.put((position_2_data, sim_time))  # Queue PositionSensor 2 data
+        distance_queue.put((distance_data, sim_time))
+        position_1_queue.put((position_1_data, sim_time))
+        position_2_queue.put((position_2_data, sim_time))
+        depth_queue.put((depth_data, sim_time))  # Queue Depth Camera data
         actuator_queue.put((actuator_data, sim_time))
     
     # Cleanup: stop the background threads and ensure final data save
@@ -241,7 +243,8 @@ if __name__ == "__main__":
     imu_thread.join()
     light_thread.join()
     touch_thread.join()
-    distance_thread.join()  # Join DistanceSensor thread
-    position_1_thread.join()  # Join PositionSensor 1 thread
-    position_2_thread.join()  # Join PositionSensor 2 thread
+    distance_thread.join()
+    position_1_thread.join()
+    position_2_thread.join()
+    depth_thread.join()
     actuator_thread.join()

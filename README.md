@@ -18,7 +18,7 @@ We’re building a dataset of sensor and actuator readings from a cylindrical tw
 - [x] Compass 
 - [x] Distance sensor
 - [x] Light sensor 
-- Position sensor (position encoder)
+- [x] Position sensor (position encoder)
 - Radar 
 - [x] Touch sensor 
 
