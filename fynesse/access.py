@@ -1,55 +1,3 @@
-"""
-Access module for the fynesse framework.
-
-This module handles data access functionality including:
-- Data loading from various sources (web, local files, databases)
-- Legal compliance (intellectual property, privacy rights)
-- Ethical considerations for data usage
-- Error handling for access issues
-
-Legal and ethical considerations are paramount in data access.
-Ensure compliance with e.g. GDPR, intellectual property laws, and ethical guidelines.
-
-Best Practice on Implementation
-===============================
-
-1. BASIC ERROR HANDLING:
-   - Use try/except blocks to catch common errors
-   - Provide helpful error messages for debugging
-   - Log important events for troubleshooting
-
-2. WHERE TO ADD ERROR HANDLING:
-   - File not found errors when loading data
-   - Network errors when downloading from web
-   - Permission errors when accessing files
-   - Data format errors when parsing files
-
-3. SIMPLE LOGGING:
-   - Use logging for structured logs
-   - Log when operations start and complete
-   - Log errors with context information
-   - Log data summary information
-
-4. EXAMPLE PATTERNS:
-   
-   Basic error handling:
-   try:
-       df = pd.read_csv('data.csv')
-   except FileNotFoundError:
-       print("Error: Could not find data.csv file")
-       return None
-   
-   With logging:
-   logger.info("Loading data from data.csv...")
-   try:
-       df = pd.read_csv('data.csv')
-       logger.info(f"Successfully loaded {len(df)} rows of data")
-       return df
-   except FileNotFoundError:
-       logger.error("Error: Could not find data.csv file")
-       return None
-"""
-
 from typing import Union
 import pandas as pd
 import logging
@@ -62,7 +10,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def data(folder: str = "data") -> Union[pd.DataFrame, None]:
+def data(folder: str = "data", sensor: str = "gyro") -> Union[pd.DataFrame, None]:
     """
     Read the data from a folder (default = "data"), returning a structured format such as a DataFrame.
 
@@ -97,7 +45,7 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
         print(f"Error: Folder not found -> {folder}")
         return None
 
-    file_path = os.path.join(folder, "gyro.csv")
+    file_path = os.path.join(folder, f"{sensor}.csv")
 
     try:
         # Try to load the CSV
@@ -131,5 +79,8 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
 
 if __name__ == "__main__":
     # Test the data access function
-    df = data("data/noiseless/2025-09-17-095442")
+    dir = "data/noiseless/2025-09-17-095442"
+    sensor = "compass" 
+    
+    df = data(dir, sensor)
     print(df.head())

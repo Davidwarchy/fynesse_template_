@@ -1,0 +1,107 @@
+[
+    {
+        "id": 1,
+        "name": "gyro",
+        "shape": [
+            3
+        ], 
+        "can_csv": true
+    },
+    {
+        "id": 2,
+        "name": "accelerometer",
+        "shape": [
+            3
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 3,
+        "name": "gps",
+        "shape": [
+            3
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 4,
+        "name": "compass",
+        "shape": [
+            3
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 5,
+        "name": "distance",
+        "shape": [
+            1
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 6,
+        "name": "light",
+        "shape": [
+            1
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 7,
+        "name": "touch",
+        "shape": [
+            3
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 8,
+        "name": "actuator",
+        "shape": [
+            2
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 9,
+        "name": "imu",
+        "shape": [
+            3
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 10,
+        "name": "position_1",
+        "shape": [
+            1
+        ],
+        "can_csv": true
+    },
+    {
+        "id": 11,
+        "name": "position_2",
+        "shape": [
+            1
+        ], 
+        "can_csv": true
+    },
+    {
+        "id": 13,
+        "name": "lidar",
+        "shape": [
+            2048,
+            3
+        ], 
+        "can_csv": false
+    },
+    {
+        "id": 14,
+        "name": "depth",
+        "shape": [
+            262144
+        ],
+        "can_csv": false
+    }
+]
