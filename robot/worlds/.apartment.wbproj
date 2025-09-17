@@ -8,5 +8,5 @@ orthographicViewHeight: 1
 textFiles: -1
 consoles: Console:All:All
 renderingDevicePerspectives: robot_180000_um_0:Astra depth;0;0.839844;0;0
-renderingDevicePerspectives: robot_180000_um_0:Astra rgb;0;0.839844;0;0
+renderingDevicePerspectives: robot_180000_um_0:Astra rgb;1;0.839844;0;0
 renderingDevicePerspectives: robot_180000_um_0:display;0;0.839844;0;0

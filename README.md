@@ -48,6 +48,28 @@ Shape: (3,)
 #### Lidar 
 Shape: (2048, 3)
 
+### The Nature of the Dataset 
+* In the end, we have pickle files for each of the sensors
+* Each of this
+
+We have also created a script for reading the dataset pickle files. For example, when we read data collected by the position encoder of wheel 
+
+| Simulation Time | Value   |
+|-----------------|---------|
+| 40.016 s        | 159.371 |
+| 40.032 s        | 159.472 |
+| 40.048 s        | 159.572 |
+| 40.064 s        | 159.673 |
+| 40.080 s        | 159.773 |
+| 40.096 s        | 159.873 |
+| 40.112 s        | 159.974 |
+| 40.128 s        | 160.074 |
+| 40.144 s        | 160.175 |
+| 40.160 s        | 160.275 |
+
+The shapes of each of the sensor outputs are saved in [sensors.json](robot/controllers/drive_robot/sensors.json)
+
+
 ### Real to Sim Gap 
 * [List of some gaps](https://chatgpt.com/share/68c81135-1118-8002-975e-974bc2d90bb0)
 > Instead of the usual real to sim gap, we'll sort of reverse collections from simulation to integrate weaknesses in the real world...

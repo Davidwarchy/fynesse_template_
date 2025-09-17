@@ -46,7 +46,7 @@ def read_pickle_data(pickle_file, n):
         for i in range(n):
             sim_time, sensor_values = data[i]
             if num_columns == 1:
-                print(f"{sim_time:.3f} s | {sensor_values:.3f}")
+                print(f"{sim_time:.3f} s | {sensor_values[0]:.3f}")
             else:
                 values = [f"{val:.3f}" for val in sensor_values]
                 print(f"{sim_time:.3f} s | {' | '.join(values)}")
@@ -56,8 +56,18 @@ def read_pickle_data(pickle_file, n):
 
 if __name__ == "__main__":
     # Construct the pickle file path
-    pickle_file = "robot/controllers/drive_robot/data/2025-09-17-095442/actuator.pkl"
+    sensors = [
+        "gyro", "accelerometer", "gps", "compass", "distance", 
+        "light", "touch", "actuator", "imu", "position_1", "position_2"
+    ]
+
+    
+    pickle_file = "robot/controllers/drive_robot/data/2025-09-17-095442/gyro.pkl"
     n_readings = 10 
     
     # Read and print the first n elements
     read_pickle_data(pickle_file, n_readings)
+
+    for sensor in sensors:
+        pickle_file = f"robot/controllers/drive_robot/data/2025-09-17-095442/{sensor}.pkl"
+        read_pickle_data(pickle_file, n_readings)
