@@ -193,6 +193,7 @@ DEF RbtWhse Robot {
         LightSensor {
         }
         TouchSensor {
+          physics USE wheel_physics
           type "force-3d"
         }
         Gyro {

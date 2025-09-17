@@ -169,8 +169,27 @@ if __name__ == "__main__":
         gyro_data = np.array(gyro.getValues(), dtype=np.float32)  # [angular velocity x, y, z]
         imu_data = np.array(imu.getRollPitchYaw(), dtype=np.float32)  # [roll, pitch, yaw]
         light_data = np.array([light_sensor.getValue()], dtype=np.float32)  # Single value
-        print(f'Touch Sensor Data: {touch_sensor.getValues()}')
-        touch_data = np.array(touch_sensor.getValues(), dtype=np.float32)  # Depends on sensor type, typically [force] or [x, y, z]
+
+        # Handle TouchSensor data
+        sensor_type = touch_sensor.getType()  # Get sensor type
+        if sensor_type == TouchSensor.BUMPER:
+            # Bumper sensor returns a single value (0.0 or 1.0)
+            touch_data = np.array([touch_sensor.getValue()], dtype=np.float32)
+        elif sensor_type == TouchSensor.FORCE:
+            # Force sensor returns a single scalar force value
+            touch_data = np.array([touch_sensor.getValue()], dtype=np.float32)
+        elif sensor_type == TouchSensor.FORCE3D:
+            # Force-3d sensor returns a 3D vector [x, y, z]
+            touch_values = touch_sensor.getValues()  # Returns LP_c_double
+            # Convert LP_c_double to list
+            touch_data = np.array([touch_values[i] for i in range(3)], dtype=np.float32)
+        else:
+            # Fallback for unknown type
+            touch_data = np.array([], dtype=np.float32)
+            print(f"Warning: Unknown touch sensor type {sensor_type}")
+
+        print(f'Touch Sensor Data: {touch_data}')
+        
         actuator_data = np.array([speed_l, speed_r], dtype=np.float32)  # Left and right motor speeds
         
         accel_queue.put((accel_data, sim_time))
