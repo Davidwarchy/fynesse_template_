@@ -137,7 +137,14 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
         logger.info(
             f"Successfully combined data: {len(combined_df)} rows, {len(combined_df.columns)} columns"
         )
-        combined_df.to_csv('x.csv')
+
+        # try save to csv for inspection
+        try:
+            combined_df.to_csv('x.csv')
+        except Exception as e:
+            logger.error(f"Error saving combined DataFrame to CSV: {e}")
+            print(f"Error saving combined DataFrame to CSV: {e}")
+
         return combined_df
 
     except Exception as e:
