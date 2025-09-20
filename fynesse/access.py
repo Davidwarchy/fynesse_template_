@@ -160,6 +160,10 @@ def data(folder: str = "data", sample_fraction: float = 0.8) -> Union[pd.DataFra
             logger.error(f"Error saving combined DataFrame to CSV: {e}")
             print(f"Error saving combined DataFrame to CSV: {e}")
 
+        print("Data access test completed.")
+
+        print("="*180)
+
         return combined_df
 
     except Exception as e:

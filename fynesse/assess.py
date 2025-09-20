@@ -1,5 +1,6 @@
 from typing import Any, Union
 import pandas as pd
+pd.set_option("future.no_silent_downcasting", True)
 import numpy as np
 import logging
 from bokeh.plotting import figure, show
@@ -29,6 +30,55 @@ How are missing values encoded, how are outliers encoded? What do columns repres
 makes rure they are correctly labeled. How is the data indexed. Crete visualisation
 routines to assess the data (e.g. in bokeh). Ensure that date formats are correct
 and correctly timezoned."""
+def fill_missing_per_sensor(df: pd.DataFrame, interval: float = 0.016) -> pd.DataFrame:
+    """
+    Restore missing sim_time values per sensor at fixed intervals,
+    forward filling other values.
+    """
+    filled_dfs = []
+
+    for sensor, group in df.groupby("sensor"):
+        logger.info(f"Processing sensor '{sensor}' with {len(group)} rows")
+
+        group = group.sort_values("sim_time").set_index("sim_time")
+        sim_time_min = group.index.min()
+        sim_time_max = group.index.max()
+
+        # Generate expected timeline with interval spacing
+        expected_times = np.arange(sim_time_min, sim_time_max + interval/2, interval)
+        logger.info(
+            f"  Sensor '{sensor}': expected {len(expected_times)} intervals "
+            f"(from {sim_time_min:.3f}s to {sim_time_max:.3f}s)"
+        )
+
+        # Reindex to full timeline
+        group_filled = group.reindex(expected_times)
+
+        # Count how many were newly inserted
+        inserted = group_filled.isnull().all(axis=1).sum()
+        logger.info(f"  Sensor '{sensor}': inserted {inserted} missing rows")
+
+        # Forward fill values
+        group_filled = group_filled.ffill().infer_objects(copy=False)
+
+        # Restore sensor column
+        group_filled["sensor"] = sensor
+
+        # Reset index so sim_time is a column again
+        group_filled = group_filled.reset_index().rename(columns={"index": "sim_time"})
+        logger.info(f"  Sensor '{sensor}': final rows = {len(group_filled)}")
+
+        filled_dfs.append(group_filled)
+
+    combined = pd.concat(filled_dfs, ignore_index=True)
+    try:
+        combined.to_csv("xffilled_data.csv", index=False)
+    except Exception as e:
+        logger.error(f"Error saving filled data: {e}")
+    logger.info(f"All sensors combined: {len(combined)} rows total")
+    return combined
+
+
 def data(folder: str = "data") -> Union[pd.DataFrame, Any]:
     """
     Load the data from access and ensure missing values are correctly encoded, indices are correct,
@@ -85,47 +135,34 @@ def data(folder: str = "data") -> Union[pd.DataFrame, Any]:
     try:
         # Check for missing values
         missing_counts = df.isnull().sum()
-        if missing_counts.sum() > 0:
-            logger.info(f"Found missing values: {missing_counts.to_dict()}")
-            print(f"Missing values found: {missing_counts[missing_counts > 0]}")
+        total_missing = missing_counts.sum()
+        if total_missing > 0:
+            logger.info(f"Found {total_missing} missing values: {missing_counts[missing_counts > 0].to_dict()}")
+            print(f"Missing values found: {total_missing} total\n{missing_counts[missing_counts > 0]}")
 
-        # Validate sim_time for gaps (16ms time step)
-        df['sim_time'] = pd.to_numeric(df['sim_time'], errors='coerce')
-        time_diffs = df['sim_time'].diff()
-        expected_step = 0.016  # 16ms in seconds
-        missing_timesteps = time_diffs[time_diffs > expected_step * 1.1]  # Allow 10% tolerance
-        if not missing_timesteps.empty:
-            logger.warning(f"Found {len(missing_timesteps)} potential missing time steps in sim_time")
-            print(f"Warning: Detected {len(missing_timesteps)} gaps in sim_time larger than 16ms")
+        # Ensure sim_time is numeric
+        df["sim_time"] = pd.to_numeric(df["sim_time"], errors="coerce")
+        if df["sim_time"].isnull().any():
+            logger.warning(f"Found {df['sim_time'].isnull().sum()} missing sim_time values")
+            print(f"Warning: Found {df['sim_time'].isnull().sum()} missing sim_time values")
 
-        # Ensure sim_time is in correct format (convert to seconds if needed)
-        if df['sim_time'].dtype != np.float64:
-            logger.info("Converting sim_time to float64")
-            df['sim_time'] = df['sim_time'].astype(np.float64)
+        # Fill missing values per sensor
+        logger.info("Restoring missing values per sensor with 16ms intervals + forward fill")
+        df = fill_missing_per_sensor(df)
 
-        # Validate data types for other columns
-        expected_types = {'sensor': 'object'}  # sensor is string
+        # Fill non-numeric columns (e.g., sensor already handled, others get placeholder)
+        if "sensor" in df.columns:
+            df["sensor"] = df["sensor"].fillna("unknown")
+            logger.info("Filled missing sensor values with 'unknown'")
+
+        # Validate data types
         for col in df.columns:
-            if col not in ['sim_time', 'sensor'] and df[col].dtype not in [np.float64, np.int64]:
+            if col not in ["sim_time", "sensor"] and df[col].dtype not in [np.float64, np.int64]:
                 logger.warning(f"Column {col} has unexpected type {df[col].dtype}, converting to float64")
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-        # Ensure informative column names (already handled by access.py, but verify)
-        if not all(col in df.columns for col in ['sim_time', 'sensor']):
-            logger.error("Required columns (sim_time, sensor) missing")
-            print("Error: DataFrame missing required columns")
-            return None
-
-        # Handle missing values (e.g., forward fill for numeric columns)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        df[numeric_cols] = df[numeric_cols].fillna(method='ffill')
-        remaining_missing = df[numeric_cols].isnull().sum().sum()
-        if remaining_missing > 0:
-            logger.info(f"After forward fill, {remaining_missing} missing values remain in numeric columns")
-            df[numeric_cols] = df[numeric_cols].fillna(0)  # Final fallback to 0
-
-        # Set index to sim_time for time-series analysis
-        df = df.set_index('sim_time', drop=False)
+        # Set sim_time as index for time-series analysis
+        df = df.set_index("sim_time", drop=False)
         logger.info("Set sim_time as index for time-series analysis")
 
         # Log final data summary
@@ -193,15 +230,17 @@ def view(data: Union[pd.DataFrame, Any]) -> None:
 
     try:
         # Create a Bokeh time series plot for each sensor
-        source = ColumnDataSource(data)
         p = figure(title="Sensor Data Time Series", x_axis_label="Time (s)", y_axis_label="Value",
                    x_axis_type="linear", width=800, height=400)
 
         colors = Category10[10]
         sensors = data['sensor'].unique()
         for i, sensor in enumerate(sensors):
-            sensor_data = data[data['sensor'] == sensor]
-            source = ColumnDataSource(sensor_data)
+            sensor_data = data[data['sensor'] == sensor].copy()
+            # source = ColumnDataSource(sensor_data)
+            source = ColumnDataSource(sensor_data.reset_index().rename(columns={'sim_time': 'sim_time_index'}))
+
+
             for col in sensor_data.columns:
                 if col not in ['sim_time', 'sensor']:
                     p.line(x='sim_time', y=col, source=source, legend_label=f"{sensor}: {col}",
@@ -211,7 +250,7 @@ def view(data: Union[pd.DataFrame, Any]) -> None:
         logger.info("Generating Bokeh time series plot")
         show(p)
 
-        # Also display a missing value heatmap using seaborn
+        # Display a missing value heatmap using seaborn
         plt.figure(figsize=(10, 6))
         sns.heatmap(data.drop(columns=['sensor']).isnull(), cbar=False, cmap='viridis')
         plt.title("Missing Values Heatmap")
@@ -227,7 +266,7 @@ def view(data: Union[pd.DataFrame, Any]) -> None:
 def labelled(data: Union[pd.DataFrame, Any]) -> Union[pd.DataFrame, Any]:
     """
     Provide a labelled set of data ready for supervised learning.
-    Assumes labels could be based on a threshold or derived column (e.g., anomaly detection).
+    Labels based on threshold (3 std devs) for anomaly detection.
 
     Args:
         data: Input DataFrame from data() function.
@@ -242,8 +281,7 @@ def labelled(data: Union[pd.DataFrame, Any]) -> Union[pd.DataFrame, Any]:
 
     try:
         df_labeled = data.copy()
-        # Example labeling: Label as 1 if any value column exceeds a threshold (e.g., 3 std devs)
-        value_cols = [col for col in df_labeled.columns if col not in ['sim_time', 'sensor']]
+        value_cols = [col for col in df_labeled.columns if col not in ['sim_time', 'sensor', 'label']]
         if not value_cols:
             logger.error("No value columns available for labeling")
             print("Error: No value columns available for labeling")
