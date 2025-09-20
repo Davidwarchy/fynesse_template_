@@ -197,3 +197,4 @@ cache/
 x*.py
 robot/controllers/drive_robot/data
 x*.*
+data/noiseless/2025-09-17-113858 copy/

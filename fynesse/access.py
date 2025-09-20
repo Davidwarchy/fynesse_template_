@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 import os
 import json
+import numpy as np
 
 # Set up basic logging
 logging.basicConfig(
@@ -10,11 +11,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def data(folder: str = "data") -> Union[pd.DataFrame, None]:
+def data(folder: str = "data", sample_fraction: float = 0.8) -> Union[pd.DataFrame, None]:
     """
     Read the data from a folder (default = "data"), returning a structured format such as a DataFrame.
     If sensor is specified, loads data for that sensor only. If sensor is None or empty, combines data
     from all CSV-convertible sensors listed in sensors.json in a sparse wide format with a sensor column.
+    Randomly drops rows for each sensor type before combining, based on the sample_fraction.
 
     IMPLEMENTATION GUIDE
     ====================
@@ -25,6 +27,7 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
        - If sensor is None or empty, loads and combines data from all CSV-convertible sensors.
        - Folder defaults to "data".
        - Dynamically creates a unified column set from csv_columns in sensors.json.
+       - Randomly samples rows for each sensor's data based on sample_fraction.
 
     2. ERROR HANDLING:
        - Missing folder → log + return None
@@ -38,12 +41,18 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
 
     Args:
         folder (str, optional): Path to folder containing sensor data CSVs. Defaults to "data".
-        sensor (str, optional): Specific sensor to load data for. If None or empty, combines all CSV sensors. Defaults to "gyro".
+        sample_fraction (float, optional): Fraction of rows to keep for each sensor (0.0 to 1.0). Defaults to 0.8.
 
     Returns:
         pd.DataFrame or None: DataFrame in sparse wide format with sensor column or None on error.
     """
     logger.info(f"Starting data access operation in folder: {folder}")
+
+    # Validate sample_fraction
+    if not 0.0 <= sample_fraction <= 1.0:
+        logger.error(f"Invalid sample_fraction: {sample_fraction}. Must be between 0.0 and 1.0.")
+        print(f"Error: Invalid sample_fraction -> {sample_fraction}. Must be between 0.0 and 1.0.")
+        return None
 
     # Ensure folder exists
     if not os.path.exists(folder):
@@ -92,6 +101,12 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
                 print(f"Warning: The file {file_path} is empty.")
                 continue
 
+            # Randomly sample rows
+            if sample_fraction < 1.0:
+                original_rows = len(df)
+                df = df.sample(frac=sample_fraction, random_state=np.random.randint(0, 10000))
+                logger.info(f"Sampled {len(df)} rows from {original_rows} for {sensor_name} (fraction: {sample_fraction})")
+
             # Map sensor-specific columns to unified columns
             column_mapping = {
                 f"value_{i}": name for i, name in enumerate(s["csv_columns"])
@@ -138,7 +153,7 @@ def data(folder: str = "data") -> Union[pd.DataFrame, None]:
             f"Successfully combined data: {len(combined_df)} rows, {len(combined_df.columns)} columns"
         )
 
-        # try save to csv for inspection
+        # Try save to csv for inspection
         try:
             combined_df.to_csv('x.csv')
         except Exception as e:
@@ -157,8 +172,8 @@ if __name__ == "__main__":
     # Test the data access function
     dir = "data/noiseless/2025-09-17-095442"
 
-    # Test with all sensors
-    df_all = data(dir)
+    # Test with all sensors and default sampling fraction (80%)
+    df_all = data(dir, sample_fraction=0.8)
     if df_all is not None:
-        print("\nCombined DataFrame for all sensors:")
+        print("\nCombined DataFrame for all sensors (after random sampling):")
         print(df_all.head())
