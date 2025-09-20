@@ -86,20 +86,68 @@ Our simulation starts “perfect.” We deliberately degrade the data to mimic r
 * **Latency** (different update rates across sensors).
 * **Jitter** (mechanical vibrations causing oscillations).
 
-## Assess
+--- 
 
-The collected dataset gives us:
+## Assess 
 
-* **Multimodal sensor time-series** (synchronous but at different rates).
-* **Actuator–sensor correlations** (how motor commands affect observed values).
-* **Redundancies & relationships**: which sensors provide overlapping information, and which are critical.
+The `assess` module provides a framework for **loading, cleaning, visualizing, and labeling sensor data** for analysis and machine learning. It combines data handling, logging, visualization, and anomaly labeling into a structured workflow.
 
-This allows us to explore tasks like:
+### Key Features Implemented
 
-* Predicting one sensor’s readings from another (sensor fusion or compression).
-* Identifying minimal sensor sets needed for reliable behavior.
-* Mapping the topology of robot-environment interaction (e.g., wheel encoders + compass → odometry drift).
+1. **Logging Setup**
 
+   * Configured logging with timestamps, levels, and messages.
+   * Logs progress and issues during data assessment, filling, visualization, and labeling.
+
+2. **Data Cleaning & Preparation**
+
+   * `fill_missing_per_sensor(df, interval=0.016)`
+
+     * Restores missing `sim_time` values per sensor at fixed 16ms intervals.
+     * Reindexes sensor groups, forward-fills missing values, and maintains time alignment.
+     * Saves the cleaned data to `xffilled_data.csv`.
+
+   * `data(folder="data")`
+
+     * Loads data via the `access` module.
+     * Handles missing values and invalid types.
+     * Ensures `sim_time` is numeric and used as index.
+     * Normalizes column types (floats/ints).
+     * Logs and prints summaries of cleaning results.
+
+3. **Data Exploration**
+
+   * `query(data)`
+
+     * Interactive CLI-based querying of sensor data.
+     * Allows filtering by sensor name and time range.
+     * Reports how many rows match the criteria.
+
+4. **Visualization**
+
+   * `view(data)`
+
+     * Generates **Bokeh time-series plots** per sensor and value column.
+     * Interactive legend (click-to-hide/show).
+     * Generates **seaborn heatmap** for missing value visualization.
+
+5. **Labeling for Supervised Learning**
+
+   * `labelled(data)`
+
+     * Labels anomalies using a **3 standard deviation threshold** rule.
+     * Adds a `label` column (0 = normal, 1 = anomaly).
+     * Prints label distribution and returns labeled dataset.
+
+6. **Main Execution Block**
+
+   * Demonstrates usage with a sample dataset folder:
+
+     * Loads and cleans data (`data`)
+     * Prints head of dataset
+     * Runs a query (`query`)
+     * Generates plots (`view`)
+     * Produces labeled dataset (`labelled`)
 ---
 
 ## Address
