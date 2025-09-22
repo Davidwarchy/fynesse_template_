@@ -18,11 +18,11 @@ if __name__ == "__main__":
     motor_l = robot.getDevice("motor_1")
     motor_r = robot.getDevice("motor_2")
     rgb_camera = robot.getDevice("Astra rgb")
-    depth_camera = robot.getDevice("Astra depth")
+    # depth_camera = robot.getDevice("Astra depth")
     keyboard = robot.getKeyboard()
     accelerometer = robot.getDevice("accelerometer")
     compass = robot.getDevice("compass")
-    lidar = robot.getDevice("lidar")
+    # lidar = robot.getDevice("lidar")
     gps = robot.getDevice("gps")
     gyro = robot.getDevice("gyro")
     imu = robot.getDevice("imu")
@@ -40,12 +40,12 @@ if __name__ == "__main__":
     
     # Enable devices
     rgb_camera.enable(timestep)
-    depth_camera.enable(timestep * 10)
+    # depth_camera.enable(timestep * 10)
     keyboard.enable(timestep)
     accelerometer.enable(timestep)
     compass.enable(timestep)
-    lidar.enable(timestep)
-    lidar.enablePointCloud()
+    # lidar.enable(timestep)
+    # lidar.enablePointCloud()
     gps.enable(timestep)
     gyro.enable(timestep)
     imu.enable(timestep)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # Data collection setup
     accel_queue = queue.Queue()
     compass_queue = queue.Queue()
-    lidar_queue = queue.Queue()
+    # lidar_queue = queue.Queue()
     gps_queue = queue.Queue()
     gyro_queue = queue.Queue()
     imu_queue = queue.Queue()
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     distance_queue = queue.Queue()
     position_1_queue = queue.Queue()
     position_2_queue = queue.Queue()
-    depth_queue = queue.Queue()
+    # depth_queue = queue.Queue()
     actuator_queue = queue.Queue()
     stop_thread = threading.Event()
     
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     os.makedirs(data_dir, exist_ok=True)
     accel_file = os.path.join(data_dir, "accelerometer.pkl")
     compass_file = os.path.join(data_dir, "compass.pkl")
-    lidar_file = os.path.join(data_dir, "lidar.pkl")
+    # lidar_file = os.path.join(data_dir, "lidar.pkl")
     gps_file = os.path.join(data_dir, "gps.pkl")
     gyro_file = os.path.join(data_dir, "gyro.pkl")
     imu_file = os.path.join(data_dir, "imu.pkl")
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     distance_file = os.path.join(data_dir, "distance.pkl")
     position_1_file = os.path.join(data_dir, "position_1.pkl")
     position_2_file = os.path.join(data_dir, "position_2.pkl")
-    depth_file = os.path.join(data_dir, "depth.pkl")
+    # depth_file = os.path.join(data_dir, "depth.pkl")
     actuator_file = os.path.join(data_dir, "actuator.pkl")
     
     # Background thread function for saving sensor/actuator data
@@ -128,12 +128,9 @@ if __name__ == "__main__":
                     print(f"Warning: Unknown sensor type {sensor_type}")
                 
                 data.append((sim_time, sensor_data))
-                if len(data) >= 500:  # Save every 500 samples
-                    with open(output_file, 'wb') as f:
-                        pickle.dump(data, f)
-                    data = []
             except queue.Empty:
                 continue
+        # Save all data to pickle file when the thread stops (i.e., when 'Q' is pressed)
         if data:
             with open(output_file, 'wb') as f:
                 pickle.dump(data, f)
@@ -141,7 +138,7 @@ if __name__ == "__main__":
     # Start background threads for data saving
     accel_thread = threading.Thread(target=save_sensor_data, args=(accel_queue, accel_file, "accelerometer"))
     compass_thread = threading.Thread(target=save_sensor_data, args=(compass_queue, compass_file, "compass"))
-    lidar_thread = threading.Thread(target=save_sensor_data, args=(lidar_queue, lidar_file, "lidar"))
+    # lidar_thread = threading.Thread(target=save_sensor_data, args=(lidar_queue, lidar_file, "lidar"))
     gps_thread = threading.Thread(target=save_sensor_data, args=(gps_queue, gps_file, "gps"))
     gyro_thread = threading.Thread(target=save_sensor_data, args=(gyro_queue, gyro_file, "gyro"))
     imu_thread = threading.Thread(target=save_sensor_data, args=(imu_queue, imu_file, "imu"))
@@ -150,12 +147,12 @@ if __name__ == "__main__":
     distance_thread = threading.Thread(target=save_sensor_data, args=(distance_queue, distance_file, "distance"))
     position_1_thread = threading.Thread(target=save_sensor_data, args=(position_1_queue, position_1_file, "position_1"))
     position_2_thread = threading.Thread(target=save_sensor_data, args=(position_2_queue, position_2_file, "position_2"))
-    depth_thread = threading.Thread(target=save_sensor_data, args=(depth_queue, depth_file, "depth"))
+    # depth_thread = threading.Thread(target=save_sensor_data, args=(depth_queue, depth_file, "depth"))
     actuator_thread = threading.Thread(target=save_sensor_data, args=(actuator_queue, actuator_file, "actuator"))
     
     accel_thread.daemon = True
     compass_thread.daemon = True
-    lidar_thread.daemon = True
+    # lidar_thread.daemon = True
     gps_thread.daemon = True
     gyro_thread.daemon = True
     imu_thread.daemon = True
@@ -164,12 +161,12 @@ if __name__ == "__main__":
     distance_thread.daemon = True
     position_1_thread.daemon = True
     position_2_thread.daemon = True
-    depth_thread.daemon = True
+    # depth_thread.daemon = True
     actuator_thread.daemon = True
     
     accel_thread.start()
     compass_thread.start()
-    lidar_thread.start()
+    # lidar_thread.start()
     gps_thread.start()
     gyro_thread.start()
     imu_thread.start()
@@ -178,7 +175,7 @@ if __name__ == "__main__":
     distance_thread.start()
     position_1_thread.start()
     position_2_thread.start()
-    depth_thread.start()
+    # depth_thread.start()
     actuator_thread.start()
     
     # Main loop: perform simulation steps until Webots is stopping the controller or 'Q' is pressed
@@ -216,7 +213,7 @@ if __name__ == "__main__":
         sim_time = robot.getTime()
         accel_data = accelerometer.getValues()  # Raw list [x, y, z]
         compass_data = compass.getValues()  # Raw list [x, y, z]
-        lidar_data = lidar.getPointCloud()  # Raw point cloud
+        # lidar_data = lidar.getPointCloud()  # Raw point cloud
         gps_data = gps.getValues()  # Raw list [x, y, z]
         gyro_data = gyro.getValues()  # Raw list [x, y, z]
         imu_data = imu.getRollPitchYaw()  # Raw list [roll, pitch, yaw]
@@ -225,12 +222,13 @@ if __name__ == "__main__":
         distance_data = distance_sensor.getValue()  # Raw float
         position_1_data = position_sensor_1.getValue()  # Raw float
         position_2_data = position_sensor_2.getValue()  # Raw float
-        depth_data = depth_camera.getRangeImage()  # Raw depth image list
+        # depth_data = depth_camera.getRangeImage()  # Raw depth image list
         actuator_data = [speed_l, speed_r]  # Raw list
         
+        print(f"Sim Time: {sim_time:.2f} s | Actuators: L={speed_l:.2f}, R={speed_r:.2f}")
         accel_queue.put((accel_data, sim_time))
         compass_queue.put((compass_data, sim_time))
-        lidar_queue.put((lidar_data, sim_time))
+        # lidar_queue.put((lidar_data, sim_time))
         gps_queue.put((gps_data, sim_time))
         gyro_queue.put((gyro_data, sim_time))
         imu_queue.put((imu_data, sim_time))
@@ -239,14 +237,14 @@ if __name__ == "__main__":
         distance_queue.put((distance_data, sim_time))
         position_1_queue.put((position_1_data, sim_time))
         position_2_queue.put((position_2_data, sim_time))
-        depth_queue.put((depth_data, sim_time))
+        # depth_queue.put((depth_data, sim_time))
         actuator_queue.put((actuator_data, sim_time))
     
     # Cleanup: stop the background threads and ensure final data save
     stop_thread.set()
     accel_thread.join()
     compass_thread.join()
-    lidar_thread.join()
+    # lidar_thread.join()
     gps_thread.join()
     gyro_thread.join()
     imu_thread.join()
@@ -255,5 +253,5 @@ if __name__ == "__main__":
     distance_thread.join()
     position_1_thread.join()
     position_2_thread.join()
-    depth_thread.join()
+    # depth_thread.join()
     actuator_thread.join()

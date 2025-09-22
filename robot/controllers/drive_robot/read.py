@@ -69,5 +69,5 @@ if __name__ == "__main__":
     read_pickle_data(pickle_file, n_readings)
 
     for sensor in sensors:
-        pickle_file = f"robot/controllers/drive_robot/data/2025-09-17-095442/{sensor}.pkl"
+        pickle_file = f"robot/controllers/drive_robot/data/2025-09-22-155852/{sensor}.pkl"
         read_pickle_data(pickle_file, n_readings)
