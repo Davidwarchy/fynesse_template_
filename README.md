@@ -175,6 +175,10 @@ Once we’ve assessed, we can **address real-world constraints**:
 
 * A major question is when we have data of different dimensions. How do we assess relationships between data of different shapes? An example would be lidar data and compass data. Lidar has shape (2048, 3). 
 
+### Limitations of the Current Pipeline 
+- Real world data is usually very specific, and important signals are encoded in durations of different perception. There's a lot of frequency details that are ommitted. 
+- Comparison of data of different dimensions is a challenge to implement and where it's implemented, we might use averages, which glosses over fine details 
+
 ## Credits 
 * Inspired by https://mlatcl.github.io/
 * Template from https://github.com/lawrennd/fynesse_template/

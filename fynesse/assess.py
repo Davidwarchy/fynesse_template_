@@ -168,6 +168,11 @@ def data(folder: str = "data") -> Union[pd.DataFrame, Any]:
         # Log final data summary
         logger.info(f"Data assessment completed. Final shape: {df.shape}")
         print(f"Data assessment completed: {len(df)} rows, {len(df.columns)} columns")
+
+        print("Data assessment test completed.")
+
+        print("="*180)
+
         return df
 
     except Exception as e:
@@ -295,6 +300,7 @@ def labelled(data: Union[pd.DataFrame, Any]) -> Union[pd.DataFrame, Any]:
 
         logger.info(f"Generated labels: {df_labeled['label'].value_counts().to_dict()}")
         print(f"Label distribution:\n{df_labeled['label'].value_counts()}")
+
         return df_labeled
 
     except Exception as e:
