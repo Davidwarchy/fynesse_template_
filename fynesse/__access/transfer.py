@@ -124,7 +124,7 @@ def convert_all(src_base, dst_base, noisy_base, sensors_json):
 
 if __name__ == "__main__":
     # Specify manually
-    timestamp = "2025-09-22-151649"
+    timestamp = "2025-09-22-155852"
     src_base = f"robot/controllers/drive_robot/data/{timestamp}"
     dst_base = f"data/noiseless/{timestamp}"
     noisy_base = f"data/noisy/{timestamp}"
